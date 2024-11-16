@@ -24,6 +24,8 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
   const [stateRedirect, setStateRedirect] = React.useState<StateRedirect>({
     countDown: DEFAULT_WAIT_TIME,
   });
+
+  const [clipboard] = useClipboard();
   const [generate] = useLinkGenerator();
   const [parsedURL] = useLinkParser();
 
@@ -43,6 +45,14 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
       title: "Success copying link!",
       description: "Now you can share it in chat!",
       duration: 3000,
+    });
+  };
+  const handlePasteSourceFromClipboard = () => {
+    if (!clipboard || typeof clipboard !== "string")
+      throw new Error("Clipboard is empty");
+    setStateGenerate({
+      ...stateGenerate,
+      source: clipboard,
     });
   };
   const handleChangeHeaderByState = () => {
@@ -118,14 +128,24 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
 
           <div className="button-reels">
             {/* show when no prompt submitted */}
-            <Button
-              colorScheme="pink"
-              borderRadius={0}
-              onClick={handleGenerateURL}
-              disabled={!stateGenerate.source}
-            >
-              Generate!
-            </Button>
+            {!stateGenerate.source && clipboard ? (
+              <Button
+                colorScheme="pink"
+                borderRadius={0}
+                onClick={handlePasteSourceFromClipboard}
+              >
+                Paste from Clipboard
+              </Button>
+            ) : (
+              <Button
+                colorScheme="pink"
+                borderRadius={0}
+                onClick={handleGenerateURL}
+                disabled={!stateGenerate.source}
+              >
+                Generate!
+              </Button>
+            )}
 
             <span className="px-2">
               <Link to={`/faqs`}>
@@ -344,6 +364,23 @@ const useLinkParser = () => {
   }, [location]);
 
   return [parsed];
+};
+
+const useClipboard = () => {
+  const [clipboardText, setClipboardText] = React.useState("");
+
+  const handleReadClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setClipboardText(text);
+    } catch (error) {}
+  };
+
+  React.useEffect(() => {
+    (async () => await handleReadClipboard())();
+  }, []);
+
+  return [clipboardText, handleReadClipboard];
 };
 
 // ***
