@@ -318,8 +318,12 @@ const useLinkParser = () => {
   const parse = (encodedURL: string): string => {
     if (!encodedURL) throw new Error("Encoded URL is required");
 
-    const out = URIGenerator.decodeURL(encodedURL);
-    return out.url;
+    try {
+      const out = URIGenerator.decodeURL(encodedURL);
+      return out.url;
+    } catch (error) {
+      return "";
+    }
   };
 
   React.useEffect(() => {
