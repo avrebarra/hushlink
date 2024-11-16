@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 
 import { Textarea, Button } from "@chakra-ui/react";
 import { useToast } from "@chakra-ui/react";
@@ -11,15 +11,20 @@ const APP_ICON_SRC =
   "https://em-content.zobj.net/source/microsoft-teams/363/shushing-face_1f92b.png";
 
 type PropsNone = {};
+type Step = "generate" | "show" | "redirecting";
 
 export const FCScreenHome: React.FC<PropsNone> = ({}) => {
   const toast = useToast();
 
-  const [step, setStep] = React.useState<"generate" | "show">("generate");
+  const [step, setStep] = React.useState<Step>("generate");
   const [customHeader, setCustomHeader] = React.useState<string>("");
   const [stateGenerate, setStateGenerate] = React.useState<StateGenerate>({});
   const [stateResult, setStateResult] = React.useState<StateResult>({});
+  const [stateRedirect, setStateRedirect] = React.useState<StateRedirect>({
+    countdown: 10,
+  });
   const [generate] = useLinkGenerator();
+  const [parsedURL] = useLinkParser();
 
   const handleGenerateURL = () => {
     if (!stateGenerate.source) throw new Error("Source URL is required");
@@ -42,6 +47,9 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
   const handleChangeHeaderByState = () => {
     let header = "";
     switch (true) {
+      case !!parsedURL:
+        header = "We are redirecting youu..";
+        break;
       case !!stateResult.url:
         header = "Your link is ready!";
         break;
@@ -49,17 +57,41 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
     setCustomHeader(header);
   };
   const handleChangeStepByState = () => {
-    let step: "generate" | "show" = "generate";
+    let step: Step = "generate";
     switch (true) {
+      case !!parsedURL:
+        step = "redirecting";
+        break;
       case !!stateResult.url:
         step = "show";
         break;
     }
     setStep(step);
   };
+  const handleRedirect = () => {
+    // navigate(parsedURL);
+    window.location.href = parsedURL; // open redirect URL in current window
+  };
 
-  React.useEffect(handleChangeHeaderByState, [stateResult]);
-  React.useEffect(handleChangeStepByState, [stateResult]);
+  React.useEffect(handleChangeHeaderByState, [stateResult, parsedURL]);
+  React.useEffect(handleChangeStepByState, [stateResult, parsedURL]);
+  React.useEffect(() => {
+    if (step !== "redirecting") return;
+    const intervalId = setInterval(() => {
+      setStateRedirect((prev) => ({
+        ...stateRedirect,
+        countdown: Math.max(0, prev.countdown - 1),
+      }));
+    }, 1000); // decrement count every 1 second
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [step, parsedURL]);
+  React.useEffect(() => {
+    if (stateRedirect.countdown !== 0) return;
+    handleRedirect();
+  }, [stateRedirect, history]);
 
   return (
     <>
@@ -104,7 +136,7 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
         </div>
       </FCGuardShow>
 
-      <FCGuardShow show={step === "show"}>
+      <FCGuardShow show={step == "show"}>
         <div id="section-result">
           <div className="pt-4 pb-10">
             <div className="pb-2 font-mono text-lg">{stateResult.url}</div>
@@ -131,6 +163,18 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
               Reset
             </Button>
           </span>
+        </div>
+      </FCGuardShow>
+
+      <FCGuardShow show={step == "redirecting"}>
+        <div className="button-reels">
+          <Button
+            colorScheme="whatsapp"
+            borderRadius={0}
+            onClick={handleRedirect}
+          >
+            Opening in {stateRedirect.countdown}s...
+          </Button>
         </div>
       </FCGuardShow>
     </>
@@ -169,10 +213,10 @@ export const FCHeader: React.FC<PropsHeader> = (p) => {
       <div id="section-header">
         <div className="pb-4">
           <div className="font-bold text-5xl">
-            <Link className="" to={`/`}>
+            <a href="/">
               <img className="w-16" src={APP_ICON_SRC} alt="" />
-              {APP_NAME}{" "}
-            </Link>
+              {APP_NAME}
+            </a>
           </div>
           <div className="pt-2 text-xl">{p.subtitle}</div>
         </div>
@@ -241,6 +285,29 @@ const useLinkGenerator = () => {
   return [generate];
 };
 
+const useLinkParser = () => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const encodedURL = Array.from(queryParams.keys())[0];
+
+  const [parsed, setParsed] = React.useState<string>("");
+
+  const parse = (encodedURL: string): string => {
+    if (!encodedURL) throw new Error("Encoded URL is required");
+
+    const out = URIGenerator.decodeURL(encodedURL);
+    return out.url;
+  };
+
+  React.useEffect(() => {
+    if (!encodedURL) return;
+    const out = parse(encodedURL);
+    setParsed(out);
+  }, [location]);
+
+  return [parsed];
+};
+
 // ***
 
 type StateGenerate = {
@@ -249,4 +316,8 @@ type StateGenerate = {
 
 type StateResult = {
   url?: string;
+};
+
+type StateRedirect = {
+  countdown: number;
 };
