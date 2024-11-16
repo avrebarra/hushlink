@@ -24,12 +24,8 @@ jobs:
       run: yarn global add workbox-cli
     - name: Build app
       run: make build
-    - name: Recreate gh-pages branch
-      run: git checkout -b gh-pages
-    - name: Promote build
-      run: mv dist /tmp/dist && ls | grep -v ".git" | xargs rm -r && mv /tmp/dist/* .
     - name: Deploy to Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./_site
+        publish_dir: ./dist
