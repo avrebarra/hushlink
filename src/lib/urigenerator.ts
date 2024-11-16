@@ -22,4 +22,4 @@ const decodeURL = (s: string): URLData => {
   return out;
 };
 
-export { encodeURL, decodeURL };
+export { URLData, encodeURL, decodeURL };

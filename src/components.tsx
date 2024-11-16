@@ -15,24 +15,20 @@ type PropsNone = {};
 export const FCScreenHome: React.FC<PropsNone> = ({}) => {
   const toast = useToast();
 
-  const [sourceURL, setSourceURL] = React.useState<string>("");
-  const [resultData, setResultData] = React.useState<GeneratedURL | null>(null);
+  const [stateGenerate, setStateGenerate] = React.useState<StateGenerate>({});
+  const [stateResult, setStateResult] = React.useState<StateResult>({});
+  const [generate] = useLinkGenerator();
 
-  const handleClickReset = () => {
-    setSourceURL("");
-  };
-  const handleDataFailure = (msg: string) => {
+  const handleGenerateURL = () => {
+    if (!stateGenerate.source) throw new Error("Source URL is required");
+    const result = generate(stateGenerate.source);
+    setStateResult({ url: result });
     toast({
-      title: "Failure occured",
-      description: msg,
-      status: "error",
-      duration: 5000,
-      position: "top",
-      isClosable: true,
+      title: "Success generating link!",
+      description: "Now you can share it in chat!",
+      duration: 3000,
     });
-    handleClickReset();
   };
-
   React.useEffect(() => {}, []);
 
   return (
@@ -41,13 +37,18 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
         <FCHeader subtitle={APP_DESCRIPTION} />
       </div>
 
-      <div id="section-craft">
+      <div id="section-generate">
         <Textarea
           className="mt-1 mb-4"
           borderRadius={0}
           placeholder="Lets go! Insert your url link here!"
-          onChange={(e) => setSourceURL(e.currentTarget.value)}
-          value={sourceURL}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            setStateGenerate({
+              ...stateGenerate,
+              source: e.currentTarget.value,
+            })
+          }
+          value={stateGenerate.source}
         />
 
         <div id="button-reels">
@@ -55,9 +56,7 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
           <Button
             colorScheme="whatsapp"
             borderRadius={0}
-            onClick={() => {
-              setSourceURL(sourceURL);
-            }}
+            onClick={handleGenerateURL}
           >
             Conceal Link
           </Button>
@@ -73,21 +72,18 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
       </div>
 
       <div id="section-result">
-        <FCGuardShow show={sourceURL != "" && resultData?.url != ""}>
+        <FCGuardShow show={!!stateResult.url}>
           <div className="pt-4 pb-10">
             <div className="pb-2 font-serif font-medium text-2xl">
-              {resultData?.url}
+              {stateResult.url}
             </div>
             <div className="pb-4 text-xl font-light text-emerald-700">
-              {resultData?.url}
+              {stateResult.url}
             </div>
-            <div className="">{resultData?.url}</div>
+            <div>"{stateResult.url}"</div>
           </div>
         </FCGuardShow>
       </div>
-
-      {/* hidden from user */}
-      <FCLinkGenerator sourceURL={sourceURL} onGeneratedURL={setResultData} />
     </>
   );
 };
@@ -179,28 +175,28 @@ export const FCGuardShow: React.FC<PropsGuardShow> = (p) => {
   return <>{p.children}</>;
 };
 
-type PropsLinkGenerator = {
-  sourceURL: string;
-  onGeneratedURL: (res: GeneratedURL) => void;
-};
-const FCLinkGenerator: React.FC<PropsLinkGenerator> = (p) => {
-  React.useEffect(() => {
-    if (p.sourceURL == "") return;
+const useLinkGenerator = () => {
+  const generate = (sourceURL: string): string => {
+    if (!sourceURL) throw new Error("Source URL is required");
 
     const currentURL = new URL(window.location.href);
     const currentURLString = currentURL.toString().replace(/\/$/, "");
     const out = URIGenerator.encodeURL({
-      url: p.sourceURL,
+      url: sourceURL,
     });
 
-    p.onGeneratedURL({ url: `${currentURLString}?${out}` });
-  }, [p.sourceURL]);
+    return `${currentURLString}?${out}`;
+  };
 
-  return <></>;
+  return [generate];
 };
 
 // ***
 
-type GeneratedURL = {
-  url: string;
+type StateGenerate = {
+  source?: string;
+};
+
+type StateResult = {
+  url?: string;
 };
