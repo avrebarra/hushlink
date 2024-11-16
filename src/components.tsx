@@ -209,6 +209,17 @@ export const FCScreenFAQ: React.FC<PropsNone> = ({}) => {
 
       <FCFAQItem q="Who created this?">Me!</FCFAQItem>
 
+      <FCFAQItem q="Is this open source?">
+        Yep, if you want to get the source you can go here{" "}
+        <a
+          href="https://github.com/avrebarra/hushlink"
+          target="_blank"
+          className="text-pink-400"
+        >
+          https://github.com/avrebarra/hushlink
+        </a>
+      </FCFAQItem>
+
       <FCFAQItem q="Can I use this for...">
         Please use for good (or friendly fun) causes.
       </FCFAQItem>
