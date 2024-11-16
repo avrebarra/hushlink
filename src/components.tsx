@@ -9,7 +9,7 @@ const APP_NAME = "hushlink";
 const APP_DESCRIPTION = "hide and conceal your prank links ;)";
 const APP_ICON_SRC =
   "https://em-content.zobj.net/source/microsoft-teams/363/shushing-face_1f92b.png";
-const DEFAULT_WAIT_TIME = 7;
+const DEFAULT_WAIT_TIME = 5;
 
 type PropsNone = {};
 type Step = "generate" | "show" | "redirecting";
