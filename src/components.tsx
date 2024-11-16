@@ -15,6 +15,8 @@ type PropsNone = {};
 export const FCScreenHome: React.FC<PropsNone> = ({}) => {
   const toast = useToast();
 
+  const [step, setStep] = React.useState<"generate" | "show">("generate");
+  const [customHeader, setCustomHeader] = React.useState<string>("");
   const [stateGenerate, setStateGenerate] = React.useState<StateGenerate>({});
   const [stateResult, setStateResult] = React.useState<StateResult>({});
   const [generate] = useLinkGenerator();
@@ -29,61 +31,108 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
       duration: 3000,
     });
   };
-  React.useEffect(() => {}, []);
+  const handleCopyURL = () => {
+    navigator.clipboard.writeText(stateResult.url || "");
+    toast({
+      title: "Success copying link!",
+      description: "Now you can share it in chat!",
+      duration: 3000,
+    });
+  };
+  const handleChangeHeaderByState = () => {
+    let header = "";
+    switch (true) {
+      case !!stateResult.url:
+        header = "Your link is ready!";
+        break;
+    }
+    setCustomHeader(header);
+  };
+  const handleChangeStepByState = () => {
+    let step: "generate" | "show" = "generate";
+    switch (true) {
+      case !!stateResult.url:
+        step = "show";
+        break;
+    }
+    setStep(step);
+  };
+
+  React.useEffect(handleChangeHeaderByState, [stateResult]);
+  React.useEffect(handleChangeStepByState, [stateResult]);
 
   return (
     <>
       <div id="section-header">
-        <FCHeader subtitle={APP_DESCRIPTION} />
+        <FCHeader subtitle={customHeader || APP_DESCRIPTION} />
       </div>
 
-      <div id="section-generate">
-        <Textarea
-          className="mt-1 mb-4"
-          borderRadius={0}
-          placeholder="Lets go! Insert your url link here!"
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-            setStateGenerate({
-              ...stateGenerate,
-              source: e.currentTarget.value,
-            })
-          }
-          value={stateGenerate.source}
-        />
+      <FCGuardShow show={step === "generate"}>
+        <div id="section-generate">
+          <Textarea
+            className="mt-1 mb-4"
+            borderRadius={0}
+            placeholder="Lets go! Insert your url link here!"
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setStateGenerate({
+                ...stateGenerate,
+                source: e.currentTarget.value,
+              })
+            }
+            value={stateGenerate.source}
+          />
 
-        <div id="button-reels">
-          {/* show when no prompt submitted */}
+          <div className="button-reels">
+            {/* show when no prompt submitted */}
+            <Button
+              colorScheme="whatsapp"
+              borderRadius={0}
+              onClick={handleGenerateURL}
+              disabled={!stateGenerate.source}
+            >
+              Conceal Link
+            </Button>
+
+            <span className="px-2">
+              <Link to={`/faqs`}>
+                <Button colorScheme="gray" size={"md"} borderRadius={0}>
+                  FAQs
+                </Button>
+              </Link>
+            </span>
+          </div>
+        </div>
+      </FCGuardShow>
+
+      <FCGuardShow show={step === "show"}>
+        <div id="section-result">
+          <div className="pt-4 pb-10">
+            <div className="pb-2 font-mono text-lg">{stateResult.url}</div>
+          </div>
+        </div>
+
+        <div className="button-reels">
           <Button
             colorScheme="whatsapp"
             borderRadius={0}
-            onClick={handleGenerateURL}
+            onClick={handleCopyURL}
+            disabled={!stateGenerate.source}
           >
-            Conceal Link
+            Copy Link
           </Button>
 
           <span className="px-2">
-            <Link to={`/faqs`}>
-              <Button colorScheme="gray" size={"md"} borderRadius={0}>
-                FAQs
-              </Button>
-            </Link>
+            <Button
+              colorScheme="gray"
+              size={"md"}
+              borderRadius={0}
+              onClick={() => setStateResult({})}
+            >
+              Reset
+            </Button>
           </span>
         </div>
-      </div>
-
-      <div id="section-result">
-        <FCGuardShow show={!!stateResult.url}>
-          <div className="pt-4 pb-10">
-            <div className="pb-2 font-serif font-medium text-2xl">
-              {stateResult.url}
-            </div>
-            <div className="pb-4 text-xl font-light text-emerald-700">
-              {stateResult.url}
-            </div>
-            <div>"{stateResult.url}"</div>
-          </div>
-        </FCGuardShow>
-      </div>
+      </FCGuardShow>
     </>
   );
 };
@@ -180,6 +229,7 @@ const useLinkGenerator = () => {
     if (!sourceURL) throw new Error("Source URL is required");
 
     const currentURL = new URL(window.location.href);
+    currentURL.search = ""; // remove query params
     const currentURLString = currentURL.toString().replace(/\/$/, "");
     const out = URIGenerator.encodeURL({
       url: sourceURL,
