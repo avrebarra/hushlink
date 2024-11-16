@@ -6,9 +6,10 @@ import { useToast } from "@chakra-ui/react";
 import * as URIGenerator from "./lib/urigenerator";
 
 const APP_NAME = "hushlink";
-const APP_DESCRIPTION = "a tool to conceal your links";
+const APP_DESCRIPTION = "hide and conceal your prank links ;)";
 const APP_ICON_SRC =
   "https://em-content.zobj.net/source/microsoft-teams/363/shushing-face_1f92b.png";
+const DEFAULT_WAIT_TIME = 7;
 
 type PropsNone = {};
 type Step = "generate" | "show" | "redirecting";
@@ -21,7 +22,7 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
   const [stateGenerate, setStateGenerate] = React.useState<StateGenerate>({});
   const [stateResult, setStateResult] = React.useState<StateResult>({});
   const [stateRedirect, setStateRedirect] = React.useState<StateRedirect>({
-    countdown: 10,
+    countDown: DEFAULT_WAIT_TIME,
   });
   const [generate] = useLinkGenerator();
   const [parsedURL] = useLinkParser();
@@ -48,10 +49,10 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
     let header = "";
     switch (true) {
       case !!parsedURL:
-        header = "We are redirecting youu..";
+        header = "we are redirecting youu..";
         break;
       case !!stateResult.url:
-        header = "Your link is ready!";
+        header = "your link is ready!";
         break;
     }
     setCustomHeader(header);
@@ -80,7 +81,7 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
     const intervalId = setInterval(() => {
       setStateRedirect((prev) => ({
         ...stateRedirect,
-        countdown: Math.max(0, prev.countdown - 1),
+        countDown: Math.max(0, prev.countDown - 1),
       }));
     }, 1000); // decrement count every 1 second
 
@@ -89,7 +90,7 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
     };
   }, [step, parsedURL]);
   React.useEffect(() => {
-    if (stateRedirect.countdown !== 0) return;
+    if (stateRedirect.countDown !== 0) return;
     handleRedirect();
   }, [stateRedirect, history]);
 
@@ -102,6 +103,7 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
       <FCGuardShow show={step === "generate"}>
         <div id="section-generate">
           <Textarea
+            autoFocus
             className="mt-1 mb-4"
             borderRadius={0}
             placeholder="Lets go! Insert your url link here!"
@@ -117,12 +119,12 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
           <div className="button-reels">
             {/* show when no prompt submitted */}
             <Button
-              colorScheme="whatsapp"
+              colorScheme="pink"
               borderRadius={0}
               onClick={handleGenerateURL}
               disabled={!stateGenerate.source}
             >
-              Conceal Link
+              Generate!
             </Button>
 
             <span className="px-2">
@@ -139,13 +141,15 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
       <FCGuardShow show={step == "show"}>
         <div id="section-result">
           <div className="pt-4 pb-10">
-            <div className="pb-2 font-mono text-lg">{stateResult.url}</div>
+            <div className="pb-2 font-mono text-lg text-pink-400">
+              {stateResult.url}
+            </div>
           </div>
         </div>
 
         <div className="button-reels">
           <Button
-            colorScheme="whatsapp"
+            colorScheme="pink"
             borderRadius={0}
             onClick={handleCopyURL}
             disabled={!stateGenerate.source}
@@ -160,7 +164,7 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
               borderRadius={0}
               onClick={() => setStateResult({})}
             >
-              Reset
+              Back
             </Button>
           </span>
         </div>
@@ -168,13 +172,20 @@ export const FCScreenHome: React.FC<PropsNone> = ({}) => {
 
       <FCGuardShow show={step == "redirecting"}>
         <div className="button-reels">
-          <Button
-            colorScheme="whatsapp"
-            borderRadius={0}
-            onClick={handleRedirect}
-          >
-            Opening in {stateRedirect.countdown}s...
+          <Button colorScheme="pink" borderRadius={0} onClick={handleRedirect}>
+            Open now
           </Button>
+          <span className="px-2">
+            <Button
+              disabled
+              colorScheme="gray"
+              size={"md"}
+              borderRadius={0}
+              onClick={() => setStateResult({})}
+            >
+              Opening in {stateRedirect.countDown}s...
+            </Button>
+          </span>
         </div>
       </FCGuardShow>
     </>
@@ -192,11 +203,23 @@ export const FCScreenFAQ: React.FC<PropsNone> = ({}) => {
       <div className="pb-4"></div>
 
       <FCFAQItem q="Why did I make this?">
-        Well, just for fun. I want to make a undecipherable prank links and
-        share it in chat but I don't want to make a bitly to hide it, haha.
+        Well, just for fun. I want to make a prank links that is undetectable
+        and share it in chat but I don't want to make a bit.ly to hide it, haha.
       </FCFAQItem>
 
       <FCFAQItem q="Who created this?">Me!</FCFAQItem>
+
+      <FCFAQItem q="Can I use this for...">
+        Please use for good (or friendly fun) causes.
+      </FCFAQItem>
+
+      <div className="pb-4"></div>
+
+      <Link to={`/`}>
+        <Button colorScheme="gray" size={"md"} borderRadius={0}>
+          Back
+        </Button>
+      </Link>
     </>
   );
 };
@@ -319,5 +342,5 @@ type StateResult = {
 };
 
 type StateRedirect = {
-  countdown: number;
+  countDown: number;
 };
